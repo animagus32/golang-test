@@ -35,7 +35,7 @@ func main() {
 	}()
 
 	// runtime.GOMAXPROCS(runtime.NumCPU())
-	climit := make(chan bool, 10000) //limit the max go routine
+	climit := make(chan bool, 1000) //limit the max go routine
 	var (
 		config *Config
 		err    error
@@ -62,7 +62,11 @@ func main() {
 			// defer wg.Done()
 			
 			fmt.Print(".")
+			// s := session.Copy()
+			// defer s.Close()
 			err := db.C("movie").Insert(info)
+			// err := s.DB(config.Mongo.Db).C("movie").Insert(info)
+			
 			if err != nil {
 				fmt.Println("error:", err.Error())
 			}
@@ -80,7 +84,7 @@ func main() {
 
 	ctx := context.WithValue(context.Background(), "log", logger)
 
-	ctx,_ = context.WithTimeout(ctx,time.Second*2)
+	ctx,_ = context.WithTimeout(ctx,time.Second*10000)
 
 	ImportVideoInfo(ctx, "filelist", handler)
 
