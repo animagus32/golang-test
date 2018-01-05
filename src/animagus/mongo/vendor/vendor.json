@@ -1,0 +1,17 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "UJTpOZ5IuuyoWFrS42uw/167mn0=",
+			"path": "github.com/BurntSushi/toml",
+			"revision": ""
+		},
+		{
+			"checksumSHA1": "verRy6qiwwZjO+nIaPMJugh6e6Q=",
+			"path": "labix.org/v2/mgo",
+			"revision": ""
+		}
+	],
+	"rootPath": "animagus/mongo"
+}

@@ -1,0 +1,3 @@
+[submodule "3rd/redpacket"]
+	path = 3rd/redpacket
+	url = git@github.com:animagus32/redpacket.git
