@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	// "labix.org/v2/mgo"
-	// "labix.org/v2/mgo/bson"
 	"animagus/mongo/db"
 	mlog "animagus/mongo/log"
 	"golang.org/x/net/context"
@@ -13,6 +11,7 @@ import (
 	"time"
 		"net/http"
 	_ "net/http/pprof"
+	// "animagus/routinepool"
 )
 
 //todo 增加context，日志，运用go routine
@@ -41,6 +40,8 @@ func main() {
 		err    error
 	)
 	var wg sync.WaitGroup
+
+
 	start := time.Now()
 	if config, err = ReadConfig("./conf.toml"); err != nil {
 		panic(err)
@@ -48,16 +49,22 @@ func main() {
 
 	fmt.Printf("host:%v\n", config.Mongo.Host)
 
+	ctx := context.WithValue(context.Background(), "log", logger)
+
+	ctx,_ = context.WithTimeout(ctx,time.Second*10000)
+
+	// var pool = routinepool.GetPool(ctx,1000)
+
 	session := db.ConnectDB(config.Mongo.Host, config.Mongo.Port)
 	defer session.Close()
-
+	
 	db := session.DB(config.Mongo.Db)
 	db.C("movie").DropCollection()
-
 	handler := func(ctx context.Context,info *MovieInfo) {
 		climit <- true
 		done := make(chan struct{})
 		wg.Add(1)
+
 		go func(info *MovieInfo) {
 			// defer wg.Done()
 			
@@ -82,9 +89,9 @@ func main() {
 		}
 	}
 
-	ctx := context.WithValue(context.Background(), "log", logger)
 
-	ctx,_ = context.WithTimeout(ctx,time.Second*10000)
+
+
 
 	ImportVideoInfo(ctx, "filelist", handler)
 

@@ -1,7 +1,8 @@
 package db 
   import (
 	"fmt"
-	"labix.org/v2/mgo"
+	// "labix.org/v2/mgo"
+	"gopkg.in/mgo.v2"
 	// "labix.org/v2/mgo/bson"
 )
 
