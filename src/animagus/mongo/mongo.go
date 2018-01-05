@@ -34,7 +34,7 @@ func main() {
 	}()
 
 	// runtime.GOMAXPROCS(runtime.NumCPU())
-	climit := make(chan bool, 1000) //limit the max go routine
+	climit := make(chan bool, 100000) //limit the max go routine
 	var (
 		config *Config
 		err    error
@@ -51,7 +51,7 @@ func main() {
 
 	ctx := context.WithValue(context.Background(), "log", logger)
 
-	ctx,_ = context.WithTimeout(ctx,time.Second*10000)
+	ctx,_ = context.WithTimeout(ctx,time.Second*100)
 
 	// var pool = routinepool.GetPool(ctx,1000)
 
@@ -88,10 +88,6 @@ func main() {
 			wg.Done()
 		}
 	}
-
-
-
-
 
 	ImportVideoInfo(ctx, "filelist", handler)
 

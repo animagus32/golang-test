@@ -1,0 +1,13 @@
+{
+	"comment": "",
+	"ignore": "test",
+	"package": [
+		{
+			"checksumSHA1": "yyysY3Ior4jy2HtchTxlP1ayIvQ=",
+			"origin": "animagus/vendor/github.com/willf/bloom",
+			"path": "github.com/willf/bloom",
+			"revision": ""
+		}
+	],
+	"rootPath": "animagus/youtube"
+}
