@@ -8,7 +8,10 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 )
+
+var filter *bloom.BloomFilter 
 
 func download(key string) error {
 	// key := "mLu5xsuGQGwYso0Fa5rwakqPIJZlFq1sEWw1KrJTWau4_x"
@@ -57,8 +60,10 @@ func getKeys(fname string, c chan string) {
 		// fmt.Println(line)
 		line = strings.Join(strings.Split(line, "\n"), "")
 		c <- line
-		break
+		// break
 	}
+	// time.Sleep(time.Second*10)
+	// close(c)
 
 }
 
@@ -73,8 +78,10 @@ func main() {
 	go func() {
 		for {
 			// key := "mLu5xsuGQGwYso0Fa5rwakqPIJZlFq1sEWw1KrJTWau4_x!"
-			key := <-cKey
-
+			key,ok := <- cKey
+			if !ok {
+				break
+			}
 			if filter.TestString(key) {
 				fmt.Println("Already download : ", key)
 			} else {
@@ -82,7 +89,9 @@ func main() {
 				if err != nil {
 					fmt.Println(err.Error())
 				} else {
+					// time.Sleep(time.Second*2)
 					filter.AddString(key)
+					fmt.Println("Add key : ",key)
 				}
 			}
 			// break
@@ -90,14 +99,36 @@ func main() {
 		done <- true
 	}()
 
-	<-done
+	<- done
 }
 
 
 func getBloomFilter(n uint) *bloom.BloomFilter{
+	bfFileName := "bf.data"
 
-	//load from file 
-	// bloom.From()
-	filter := bloom.New(20*n, 5) // load of 20, 5 keys
+	bfFile,err := os.OpenFile(bfFileName,os.O_CREATE|os.O_RDWR,0660)
+	if err != nil {
+		panic(err)
+	}
+	defer bfFile.Close()
+
+	filter = bloom.New(20*n, 5) // load of 20, 5 keys
+	filter.ReadFrom(bfFile)
+
+	go func(){
+		ticker := time.Tick(time.Second*5)
+		for {
+			<- ticker
+			f,err := os.OpenFile(bfFileName,os.O_RDWR,0660)
+			if err != nil {
+				panic(err)
+			}
+			defer f.Close()
+
+			filter.WriteTo(f)
+
+		}
+	}()
+
 	return filter
 }
