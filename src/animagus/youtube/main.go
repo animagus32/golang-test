@@ -6,38 +6,13 @@ import (
 	"github.com/willf/bloom"
 	"io"
 	"os"
-	"os/exec"
+	// "os/exec"
 	"strings"
 	"time"
 )
 
 var filter *bloom.BloomFilter 
 
-func download(key string) error {
-	// key := "mLu5xsuGQGwYso0Fa5rwakqPIJZlFq1sEWw1KrJTWau4_x"
-	url := fmt.Sprintf("https://www.youtube.com/watch?v=%s", key)
-	cmd := exec.Command("./youtube-dl", "-o", "/tmp/%(title)s.%(ext)s", url)
-	fmt.Println(url)
-	//todo 标准出错，异常处理
-	stdout, err := cmd.StdoutPipe()
-	if err != nil {
-		fmt.Println(err.Error())
-		panic(err)
-	}
-	cmd.Start()
-
-	reader := bufio.NewReader(stdout)
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil || io.EOF == err {
-			break
-		}
-		fmt.Println(line)
-	}
-	cmd.Wait()
-
-	return nil
-}
 
 func getKeys(fname string, c chan string) {
 	f, err := os.Open(fname)
@@ -67,9 +42,11 @@ func getKeys(fname string, c chan string) {
 
 }
 
+//todo 带time的log
 func main() {
 	done := make(chan bool)
 	cKey := make(chan string, 100)
+	cKeyDownloaded := make(chan string,100)
 
 	filter := getBloomFilter(uint(500000))
 
@@ -85,11 +62,12 @@ func main() {
 			if filter.TestString(key) {
 				fmt.Println("Already download : ", key)
 			} else {
-				err := download(key)
-				if err != nil {
-					fmt.Println(err.Error())
+				success,str := download(key)
+				if !success{
+					fmt.Println("Download error ",str)
 				} else {
 					// time.Sleep(time.Second*2)
+					cKeyDownloaded <- key
 					filter.AddString(key)
 					fmt.Println("Add key : ",key)
 				}
@@ -98,6 +76,8 @@ func main() {
 		}
 		done <- true
 	}()
+
+	go recordDownloaded(cKeyDownloaded)
 
 	<- done
 }
@@ -116,16 +96,16 @@ func getBloomFilter(n uint) *bloom.BloomFilter{
 	filter.ReadFrom(bfFile)
 
 	go func(){
-		ticker := time.Tick(time.Second*5)
+		ticker := time.Tick(time.Second*10)
 		for {
 			<- ticker
-			f,err := os.OpenFile(bfFileName,os.O_RDWR,0660)
-			if err != nil {
-				panic(err)
-			}
-			defer f.Close()
+			// f,err := os.OpenFile(bfFileName,os.O_RDWR,0660)
+			// if err != nil {
+			// 	panic(err)
+			// }
+			// defer f.Close()
 
-			filter.WriteTo(f)
+			filter.WriteTo(bfFile)
 
 		}
 	}()
