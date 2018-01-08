@@ -1,19 +1,21 @@
 package main
 
 import (
+	"animagus/youtube/utils"
 	"bufio"
 	"fmt"
 	"io"
-	"os/exec"
 	"os"
+	"os/exec"
 	"time"
+	"path"
 )
 
-func download(key string) (bool,string) {
+func download(key string,targetDir string) (bool, string) {
 	// key := "mLu5xsuGQGwYso0Fa5rwakqPIJZlFq1sEWw1KrJTWau4_x"
 	//文件夹名
-	dirname := "/data/youtube/video/"+time.Now().Format("2006010215")
-	err := createDirIfNotExist(dirname)
+	dirname := path.Join(targetDir,time.Now().Format("2006010215"))
+	_, err := utils.CreateDirIfNotExist(dirname)
 	if err != nil {
 		panic(err)
 	}
@@ -42,19 +44,18 @@ func download(key string) (bool,string) {
 	success := cmd.ProcessState.Success()
 	str := cmd.ProcessState.String()
 	fmt.Println(success)
-	return success,str
+	return success, str
 }
 
-
 func recordDownloaded(c chan string) {
-	f,err := os.OpenFile("downloaded.txt",os.O_CREATE|os.O_RDWR|os.O_APPEND,0660)
+	f, err := os.OpenFile("downloaded.txt", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0660)
 	if err != nil {
 		panic(err)
 	}
 	defer f.Close()
 
 	for key := range c {
-		f.WriteString(key+"\n")
+		f.WriteString(key + "\n")
 	}
 
 }

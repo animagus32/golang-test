@@ -33,3 +33,37 @@ func FinishNotify(msg string) error{
 
 	return nil
 }
+
+func IsDirExists(path string) bool {
+    fi, err := os.Stat(path)
+ 
+    if err != nil {
+        return os.IsExist(err)
+    } else {
+        return fi.IsDir()
+    }
+ 
+    panic("not reached")
+}
+
+func IsFileExists(path string) bool {
+    _, err := os.Stat(path)
+ 
+    if err != nil {
+        return os.IsExist(err)
+    } else {
+        return true
+    }
+ 
+    panic("not reached")
+}
+
+func CreateDirIfNotExist(path string) (bool,error) {
+	exist := IsDirExists(path)
+
+	if !exist {
+		return exist,os.Mkdir(path,os.ModePerm)
+	}
+
+	return exist,nil
+}

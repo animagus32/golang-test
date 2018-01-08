@@ -1,18 +1,18 @@
 package main
 
 import (
+	"animagus/youtube/utils"
 	"bufio"
+	"flag"
 	"fmt"
 	"github.com/willf/bloom"
 	"io"
 	"os"
 	"strings"
 	"time"
-	"animagus/youtube/utils"
 )
 
-var filter *bloom.BloomFilter 
-
+var filter *bloom.BloomFilter
 
 func getKeys(fname string, c chan string) {
 	f, err := os.Open(fname)
@@ -42,15 +42,27 @@ func getKeys(fname string, c chan string) {
 
 }
 
+// var seedFile string
+// var targetDir string
+
+// func init() {
+// 	flag
+// }
+
 //todo 带time的log
 func main() {
+	seedFile := flag.String("seed", "ids.txt", " seed file ")
+	targetDir := flag.String("target-dir", "/data/youtube/video", " target dir ")
 
-	defer func(){
-		err := recover() 
+	flag.Parse()
+	fmt.Println(*seedFile,*targetDir)
+	// return 
+	defer func() {
+		err := recover()
 		if err != nil {
 			fmt.Println(err)
-			utils.FinishNotify("youtube downloading panic")			
-		}else{
+			utils.FinishNotify("youtube downloading panic")
+		} else {
 			utils.FinishNotify("youtube downloading success")
 		}
 
@@ -58,30 +70,30 @@ func main() {
 
 	done := make(chan bool)
 	cKey := make(chan string, 100)
-	cKeyDownloaded := make(chan string,100)
+	cKeyDownloaded := make(chan string, 100)
 
 	filter := getBloomFilter(uint(500000))
 
-	go getKeys("ids.txt", cKey)
+	go getKeys(*seedFile, cKey)
 
 	go func() {
 		for {
 			// key := "mLu5xsuGQGwYso0Fa5rwakqPIJZlFq1sEWw1KrJTWau4_x!"
-			key,ok := <- cKey
+			key, ok := <-cKey
 			if !ok {
 				break
 			}
 			if filter.TestString(key) {
 				fmt.Println("Already downloaded : ", key)
 			} else {
-				success,str := download(key)
-				if !success{
-					fmt.Println("Download error ",str)
+				success, str := download(key,*targetDir)
+				if !success {
+					fmt.Println("Download error ", str)
 				} else {
 					// time.Sleep(time.Second*2)
 					cKeyDownloaded <- key
 					filter.AddString(key)
-					fmt.Println("Add key : ",key)
+					fmt.Println("Add key : ", key)
 				}
 			}
 			// break
@@ -91,14 +103,13 @@ func main() {
 
 	go recordDownloaded(cKeyDownloaded)
 
-	<- done
+	<-done
 }
 
-
-func getBloomFilter(n uint) *bloom.BloomFilter{
+func getBloomFilter(n uint) *bloom.BloomFilter {
 	bfFileName := "bf.data"
 
-	bfFile,err := os.OpenFile(bfFileName,os.O_CREATE|os.O_RDWR,0660)
+	bfFile, err := os.OpenFile(bfFileName, os.O_CREATE|os.O_RDWR, 0660)
 	if err != nil {
 		panic(err)
 	}
@@ -107,11 +118,11 @@ func getBloomFilter(n uint) *bloom.BloomFilter{
 	filter = bloom.New(20*n, 5) // load of 20, 5 keys
 	filter.ReadFrom(bfFile)
 
-	go func(){
-		ticker := time.Tick(time.Second*60)
+	go func() {
+		ticker := time.Tick(time.Second * 60)
 		for {
-			<- ticker
-			f,err := os.OpenFile(bfFileName,os.O_RDWR,0660)
+			<-ticker
+			f, err := os.OpenFile(bfFileName, os.O_RDWR, 0660)
 			if err != nil {
 				panic(err)
 			}
@@ -124,4 +135,3 @@ func getBloomFilter(n uint) *bloom.BloomFilter{
 
 	return filter
 }
-
