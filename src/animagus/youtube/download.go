@@ -12,7 +12,7 @@ import (
 func download(key string) (bool,string) {
 	// key := "mLu5xsuGQGwYso0Fa5rwakqPIJZlFq1sEWw1KrJTWau4_x"
 	//文件夹名
-	dirname := "/data/youtube/"+time.Now().Format("2006010215")
+	dirname := "/data/youtube/video/"+time.Now().Format("2006010215")
 	err := createDirIfNotExist(dirname)
 	if err != nil {
 		panic(err)
@@ -47,7 +47,7 @@ func download(key string) (bool,string) {
 
 
 func recordDownloaded(c chan string) {
-	f,err := os.OpenFile("downloaded.txt",os.O_CREATE|os.O_RDWR,0660)
+	f,err := os.OpenFile("downloaded.txt",os.O_CREATE|os.O_RDWR|os.O_APPEND,0660)
 	if err != nil {
 		panic(err)
 	}

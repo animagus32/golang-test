@@ -6,9 +6,9 @@ import (
 	"github.com/willf/bloom"
 	"io"
 	"os"
-	// "os/exec"
 	"strings"
 	"time"
+	"animagus/youtube/utils"
 )
 
 var filter *bloom.BloomFilter 
@@ -44,6 +44,18 @@ func getKeys(fname string, c chan string) {
 
 //todo 带time的log
 func main() {
+
+	defer func(){
+		err := recover() 
+		if err != nil {
+			fmt.Println(err)
+			utils.FinishNotify("youtube downloading panic")			
+		}else{
+			utils.FinishNotify("youtube downloading success")
+		}
+
+	}()
+
 	done := make(chan bool)
 	cKey := make(chan string, 100)
 	cKeyDownloaded := make(chan string,100)
@@ -60,7 +72,7 @@ func main() {
 				break
 			}
 			if filter.TestString(key) {
-				fmt.Println("Already download : ", key)
+				fmt.Println("Already downloaded : ", key)
 			} else {
 				success,str := download(key)
 				if !success{
@@ -96,19 +108,20 @@ func getBloomFilter(n uint) *bloom.BloomFilter{
 	filter.ReadFrom(bfFile)
 
 	go func(){
-		ticker := time.Tick(time.Second*10)
+		ticker := time.Tick(time.Second*60)
 		for {
 			<- ticker
-			// f,err := os.OpenFile(bfFileName,os.O_RDWR,0660)
-			// if err != nil {
-			// 	panic(err)
-			// }
-			// defer f.Close()
+			f,err := os.OpenFile(bfFileName,os.O_RDWR,0660)
+			if err != nil {
+				panic(err)
+			}
+			defer f.Close()
 
-			filter.WriteTo(bfFile)
+			filter.WriteTo(f)
 
 		}
 	}()
 
 	return filter
 }
+
