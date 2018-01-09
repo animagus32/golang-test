@@ -14,13 +14,18 @@ import (
 
 var filter *bloom.BloomFilter
 
-func getKeys(fname string, c chan string) {
+func getKeys(fname string, c chan string,start string ) {
 	f, err := os.Open(fname)
 	if err != nil {
 		panic(err)
 	}
 
 	buf := bufio.NewReader(f)
+	skip := true
+	if len(start) < 1 {
+		skip = false
+	}
+
 	for {
 		line, err := buf.ReadString('!')
 		// line = strings.TrimSpace(line)
@@ -32,8 +37,19 @@ func getKeys(fname string, c chan string) {
 				break
 			}
 		}
-		// fmt.Println(line)
 		line = strings.Join(strings.Split(line, "\n"), "")
+		fmt.Println(line)
+
+		if strings.TrimSpace(start) == strings.TrimSpace(line) {
+			skip = false
+		}
+
+		if len(line) < 5 || skip {
+			continue
+		}
+
+
+
 		c <- line
 		// break
 	}
@@ -41,13 +57,6 @@ func getKeys(fname string, c chan string) {
 	// close(c)
 
 }
-
-// var seedFile string
-// var targetDir string
-
-// func init() {
-// 	flag
-// }
 
 //todo 带time的log
 func main() {
@@ -71,10 +80,14 @@ func main() {
 	done := make(chan bool)
 	cKey := make(chan string, 100)
 	cKeyDownloaded := make(chan string, 100)
+	// cLimit := make(chan bool,2)
 
 	filter := getBloomFilter(uint(500000))
-
-	go getKeys(*seedFile, cKey)
+	lastDownloaded,err := findLastDownloaded()
+	if err != nil {
+		lastDownloaded = ""
+	}
+	go getKeys(*seedFile, cKey,lastDownloaded)
 
 	go func() {
 		for {
@@ -86,15 +99,22 @@ func main() {
 			if filter.TestString(key) {
 				fmt.Println("Already downloaded : ", key)
 			} else {
-				success, str := download(key,*targetDir)
-				if !success {
-					fmt.Println("Download error ", str)
-				} else {
-					// time.Sleep(time.Second*2)
-					cKeyDownloaded <- key
-					filter.AddString(key)
-					fmt.Println("Add key : ", key)
-				}
+				// cLimit <- true
+				// go func(){
+					// defer func(){
+					// 	<- cLimit
+					// }()
+					success, str := download(key,*targetDir)
+					if !success {
+						fmt.Println("Download error ", str)
+					} else {
+						// time.Sleep(time.Second*2)
+						cKeyDownloaded <- key
+						filter.AddString(key)
+						fmt.Println("Add key : ", key)
+					}
+				// }()
+
 			}
 			// break
 		}
